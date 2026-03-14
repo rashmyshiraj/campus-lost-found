@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 // helper to generate token
 const generateToken = (user) => {
@@ -15,7 +16,7 @@ const generateToken = (user) => {
 
 // ─── REGISTER ───────────────────────────────────────────
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { name, email, password, faculty } = req.body;
 
   try {
@@ -56,7 +57,7 @@ router.post('/register', async (req, res) => {
 
 // ─── LOGIN ──────────────────────────────────────────────
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {

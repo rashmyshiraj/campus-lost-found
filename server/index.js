@@ -3,9 +3,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 
+const { generalLimiter } = require('./middleware/rateLimiter');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// apply general rate limiter to all routes
+app.use(generalLimiter);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
