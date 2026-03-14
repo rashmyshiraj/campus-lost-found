@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { generalLimiter } = require('./middleware/rateLimiter');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 const app = express();
 app.use(cors());
@@ -19,6 +20,12 @@ app.use('/api/auth', require('./routes/auth'));
 app.get('/', (req, res) => {
   res.send('CampusLost&Found API is running');
 });
+
+// 404 handler — must be after all routes
+app.use(notFound);
+
+// error handler — must be last
+app.use(errorHandler);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {

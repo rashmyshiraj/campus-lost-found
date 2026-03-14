@@ -16,7 +16,7 @@ const generateToken = (user) => {
 
 // ─── REGISTER ───────────────────────────────────────────
 // POST /api/auth/register
-router.post('/register', authLimiter, async (req, res) => {
+router.post('/register', authLimiter, async (req, res, next) => {
   const { name, email, password, faculty } = req.body;
 
   try {
@@ -51,13 +51,13 @@ router.post('/register', authLimiter, async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 });
 
 // ─── LOGIN ──────────────────────────────────────────────
 // POST /api/auth/login
-router.post('/login', authLimiter, async (req, res) => {
+router.post('/login', authLimiter, async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -86,7 +86,7 @@ router.post('/login', authLimiter, async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 });
 
@@ -94,12 +94,12 @@ router.post('/login', authLimiter, async (req, res) => {
 // GET /api/auth/me  (protected)
 const { protect } = require('../middleware/authMiddleware');
 
-router.get('/me', protect, async (req, res) => {
+router.get('/me', protect, async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+ } catch (err) {
+    next(err);
   }
 });
 
