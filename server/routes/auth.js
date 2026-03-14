@@ -72,6 +72,11 @@ router.post('/login', authLimiter, async (req, res, next) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
+    
+    // check if banned
+    if (user.isBanned) {
+      return res.status(403).json({ message: 'Your account has been banned. Contact administration.' });
+    }
 
     res.json({
       message: 'Login successful',
