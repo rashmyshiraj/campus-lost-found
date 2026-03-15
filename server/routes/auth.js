@@ -235,4 +235,46 @@ router.post('/reset-password/:token', async (req, res, next) => {
   }
 });
 
+// ─── RESEND VERIFICATION EMAIL ───────────────────────────
+// POST /api/auth/resend-verification
+router.post('/resend-verification', authLimiter, async (req, res, next) => {
+  const { email } = req.body;
+
+  try {
+    // check if email is in PendingUser collection
+    const pendingUser = await PendingUser.findOne({ email });
+
+    // always return same message for security
+    if (!pendingUser) {
+      return res.json({ 
+        message: 'If that email has a pending verification you will receive a new link shortly.' 
+      });
+    }
+
+    // generate fresh token
+    const newToken = crypto.randomBytes(32).toString('hex');
+
+    // update pending user with new token
+    // this resets the 24 hour expiry too
+    await PendingUser.deleteOne({ email });
+    await PendingUser.create({
+      name: pendingUser.name,
+      email: pendingUser.email,
+      password: pendingUser.password,
+      faculty: pendingUser.faculty,
+      verificationToken: newToken
+    });
+
+    // send fresh verification email
+    await sendVerificationEmail(email, pendingUser.name, newToken);
+
+    res.json({ 
+      message: 'If that email has a pending verification you will receive a new link shortly.' 
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
