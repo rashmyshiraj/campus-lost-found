@@ -135,9 +135,41 @@ const sendVerificationEmail = async (to, name, token) => {
   await transporter.sendMail(mailOptions);
 };
 
+// ─── SEND PASSWORD RESET EMAIL ──────────────────────────
+const sendPasswordResetEmail = async (to, name, token) => {
+  const resetUrl = `http://localhost:5173/reset-password/${token}`;
+
+  const mailOptions = {
+    from: `"CampusLost&Found" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: '🔐 Reset your CampusLost&Found password',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #00BFC8;">Password Reset Request</h2>
+        <p>Hi ${name},</p>
+        <p>We received a request to reset your password. Click the button below to set a new password:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" 
+             style="background-color: #00BFC8; color: white; padding: 12px 30px; 
+                    text-decoration: none; border-radius: 5px; font-size: 16px;">
+            Reset My Password
+          </a>
+        </div>
+        <p>This link expires in <strong>1 hour</strong>.</p>
+        <p>If you did not request a password reset, ignore this email — your password will not change.</p>
+        <br/>
+        <p style="color: #888; font-size: 12px;">CampusLost&Found — University Item Recovery System</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   sendClaimStatusEmail,
   sendMatchNotificationEmail,
   sendNewClaimAlertEmail,
-  sendVerificationEmail
+  sendVerificationEmail,
+  sendPasswordResetEmail
 };

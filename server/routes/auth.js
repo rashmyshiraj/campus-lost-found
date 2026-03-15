@@ -7,7 +7,7 @@ const User = require('../models/User');
 const PendingUser = require('../models/PendingUser');
 const { protect } = require('../middleware/authMiddleware');
 const { authLimiter } = require('../middleware/rateLimiter');
-const { sendVerificationEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
 
 // helper to generate JWT token
 const generateToken = (user) => {
@@ -154,6 +154,82 @@ router.get('/me', protect, async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── FORGOT PASSWORD ─────────────────────────────────────
+// POST /api/auth/forgot-password
+router.post('/forgot-password', authLimiter, async (req, res, next) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+
+    // always return success even if email not found
+    // this prevents attackers from knowing which emails are registered
+    if (!user) {
+      return res.json({ message: 'If that email is registered you will receive a reset link shortly.' });
+    }
+
+    // generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // save token to user
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+
+    // send reset email
+    await sendPasswordResetEmail(email, user.name, resetToken);
+
+    res.json({ message: 'If that email is registered you will receive a reset link shortly.' });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── RESET PASSWORD ──────────────────────────────────────
+// POST /api/auth/reset-password/:token
+router.post('/reset-password/:token', async (req, res, next) => {
+  const { password, confirmPassword } = req.body;
+
+  try {
+    // check passwords match
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match' });
+    }
+
+    // check password length
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    // find user by token and check it hasnt expired
+    const user = await User.findOne({
+      resetPasswordToken: req.params.token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Reset link is invalid or has expired' });
+    }
+
+    // hash new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
+    // clear reset token fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.json({ message: 'Password reset successful! You can now log in with your new password.' });
+
   } catch (err) {
     next(err);
   }
