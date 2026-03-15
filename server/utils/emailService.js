@@ -103,8 +103,41 @@ const sendNewClaimAlertEmail = async (itemTitle, claimantName, claimantEmail) =>
   await transporter.sendMail(mailOptions);
 };
 
+// ─── SEND VERIFICATION EMAIL ────────────────────────────
+// called when a new user registers
+const sendVerificationEmail = async (to, name, token) => {
+  const verifyUrl = `http://localhost:5000/api/auth/verify/${token}`;
+
+  const mailOptions = {
+    from: `"CampusLost&Found" <${process.env.EMAIL_USER}>`,
+    to,
+    subject: '✅ Verify your CampusLost&Found account',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #00BFC8;">Welcome to CampusLost&Found!</h2>
+        <p>Hi ${name},</p>
+        <p>Thanks for registering. Please verify your email address by clicking the button below:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verifyUrl}" 
+             style="background-color: #00BFC8; color: white; padding: 12px 30px; 
+                    text-decoration: none; border-radius: 5px; font-size: 16px;">
+            Verify My Email
+          </a>
+        </div>
+        <p>This link expires in <strong>24 hours</strong>.</p>
+        <p>If you did not create an account, ignore this email.</p>
+        <br/>
+        <p style="color: #888; font-size: 12px;">CampusLost&Found — University Item Recovery System</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   sendClaimStatusEmail,
   sendMatchNotificationEmail,
-  sendNewClaimAlertEmail
+  sendNewClaimAlertEmail,
+  sendVerificationEmail
 };
